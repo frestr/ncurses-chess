@@ -42,8 +42,10 @@ class Board():
         tileHeight = 1 if screenDimensions[0] < 26 or screenDimensions[1] < 26 else 3
         tileWidth = tileHeight*2
 
-        xOffset = int(screenDimensions[0]//2 - tileWidth*8/2)
-        yOffset = int(screenDimensions[1]//2 - tileHeight*8/2)
+        xOffset = int(screenDimensions[0]//2 - tileWidth*8//2)
+        yOffset = int(screenDimensions[1]//2 - tileHeight*8//2)
+
+        # Draw tiles and pieces
         for y in range(tileHeight*8):
             for x in range(0, tileWidth*8, 2):
                 tile = self.board[y//tileHeight][x//tileWidth]
@@ -56,4 +58,31 @@ class Board():
                 else:
                     screen.addch(yOffset + y, xOffset + x, ' ', Color.pair[tile.tileColor])
                 screen.addch(yOffset + y, xOffset + x + 1, ' ', Color.pair[tile.tileColor])
-            print()
+
+        # Draw board numbering a to b
+        for x in range(tileWidth//2 - 1, len(self.board[0])*tileWidth, tileWidth):
+            screen.addch(yOffset - tileHeight//2 - 1, xOffset + x, \
+                    chr(ord('a')+x//tileWidth), Color.pair['numbering'])
+            screen.addch(yOffset + tileHeight*len(self.board) + tileHeight//2, xOffset + x, \
+                    chr(ord('a')+x//tileWidth), Color.pair['numbering'])
+
+        # Draw board numbering 8 to 1
+        for y in range(tileHeight//2, len(self.board)*tileHeight, tileHeight):
+            screen.addch(yOffset + y, xOffset - tileWidth//2 - 1, \
+                    str(8 - y//tileHeight), Color.pair['numbering'])
+            screen.addch(yOffset + y, xOffset + tileWidth*len(self.board[0]) + tileWidth//2, \
+                    str(8 - y//tileHeight), Color.pair['numbering'])
+
+        screen.move(yOffset + tileHeight*8//2, xOffset + tileWidth*10)
+
+    # This function changes the origin from being in the lower left (like a normal chess board),
+    # to being in the upper left (to comply with how the 2D list of the board behaves)
+    def convertCoord(self, coord):
+        return (coord[0], len(self.board)-1 - coord[1])
+
+    def movePiece(self, startPos, endPos):
+        convStartPos, convEndPos = self.convertCoord(startPos), self.convertCoord(endPos)
+        tile = self.board[convStartPos[1]][convStartPos[0]] # startPos = (x, y)
+        if tile.piece.isMoveLegal(startPos, endPos):
+            self.board[convEndPos[1]][convEndPos[0]].piece = tile.piece
+            self.board[convStartPos[1]][convStartPos[0]].piece = None
