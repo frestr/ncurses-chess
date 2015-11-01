@@ -82,7 +82,29 @@ class Board():
 
     def movePiece(self, startPos, endPos):
         convStartPos, convEndPos = self.convertCoord(startPos), self.convertCoord(endPos)
-        tile = self.board[convStartPos[1]][convStartPos[0]] # startPos = (x, y)
-        if tile.piece.isMoveLegal(startPos, endPos):
+        tile = self.board[convStartPos[1]][convStartPos[0]]
+        if tile.piece == None:
+            return
+
+        possibleMoves = tile.piece.getPossibleMoves(startPos)
+        validMoves = []
+        for direction in possibleMoves:
+            for i in range(len(direction)):
+                coord = self.convertCoord(direction[i])
+                targetTile = self.board[coord[1]][coord[0]]
+                if targetTile.piece != None:
+                    offset = 1
+                    if targetTile.piece.color == tile.piece.color:
+                        if len(direction[:i]) > 0:
+                            offset = 0
+                    for move in direction[:i+offset]:
+                        validMoves.append(move)
+                    break
+                else:
+                    if i == len(direction)-1:
+                        for move in direction:
+                            validMoves.append(move)
+
+        if endPos in validMoves:
             self.board[convEndPos[1]][convEndPos[0]].piece = tile.piece
             self.board[convStartPos[1]][convStartPos[0]].piece = None

@@ -1,5 +1,5 @@
 
-UNICODE = True
+UNICODE = False
 
 class Piece():
     def setAttributes(self, movementPattern, bounded, symbol):
@@ -10,8 +10,24 @@ class Piece():
     def setColor(self, color):
         self.color = color
 
-    def isMoveLegal(self, currPos, movePos):
-        return True
+    def getPossibleMoves(self, currPos):
+        possibleMoves = []
+        for direction in self.movementPattern:
+            dirLine = []
+            i = 1 
+            while True:
+                newPos = (currPos[0] + direction[0]*i, currPos[1] + direction[1]*i)
+                if 0 <= newPos[0] < 8 and 0 <= newPos[1] < 8:
+                    dirLine.append(newPos)
+                    if self.bounded:
+                        break
+                    else:
+                        i += 1
+                else:
+                    break
+            if len(dirLine) > 0:
+                possibleMoves.append(dirLine)
+        return possibleMoves
 
 class Pawn(Piece):
     # (0, 1) means "stay at x-axis, move one up at y-axis"
