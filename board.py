@@ -11,6 +11,7 @@ class Board():
         initialPos = [piecetype.Rook, piecetype.Knight, piecetype.Bishop, piecetype.Queen,\
                       piecetype.King, piecetype.Bishop, piecetype.Knight, piecetype.Rook]
         self.board = [[None for x in range(8)] for y in range(8)]
+        self.whitesTurn = True
 
         for y in range(len(self.board)):
             for x in range(len(self.board[0])):
@@ -99,6 +100,9 @@ class Board():
         tile = self.board[convPos[1]][convPos[0]]
         possibleMoves = tile.piece.getPossibleMoves(pos)
 
+        if self.whitesTurn and tile.piece.color != 'w' or not self.whitesTurn and tile.piece.color == 'w':
+            return []
+
         validMoves = []
         for direction in possibleMoves:
             for i in range(len(direction)):
@@ -126,3 +130,4 @@ class Board():
         if endPos in self.getValidMoves(startPos):
             self.board[convEndPos[1]][convEndPos[0]].piece = tile.piece
             self.board[convStartPos[1]][convStartPos[0]].piece = None
+            self.whitesTurn = not self.whitesTurn

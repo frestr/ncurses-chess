@@ -4,12 +4,6 @@ import shutil
 import board
 from color import Color
 
-# TODO:
-# - Check if the move is valid
-# - Alternate between white and black's turn
-# - Check if a player is in check
-# - Check fi a player is in check mate
-
 def convertInput(inpList):
     cInpList = []
     for inp in inpList:

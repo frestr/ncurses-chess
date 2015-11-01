@@ -9,6 +9,8 @@ class Piece():
 
     def setColor(self, color):
         self.color = color
+        if isinstance(self, Pawn):
+            self.movementPattern = [(0, 1)] if self.color == 'w' else [(0, -1)]
 
     def getPossibleMoves(self, currPos):
         possibleMoves = []
