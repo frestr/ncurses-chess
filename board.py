@@ -37,24 +37,38 @@ class Board():
                 
                 self.board[y][x] = Tile(tileColor, piece)
 
-    def printBoard(self, screen, screenDimensions):
+    def printBoard(self, screen, screenDimensions, tempMove=None):
         # tileHeight must be an odd number (or else the logic fails)
         tileHeight = 1 if screenDimensions[0] < 26 or screenDimensions[1] < 26 else 3
         tileWidth = tileHeight*2
 
         xOffset = int(screenDimensions[0]//2 - tileWidth*8//2)
         yOffset = int(screenDimensions[1]//2 - tileHeight*8//2)
+        
+        validMoves = []
+        if tempMove != None:
+            convCoord = self.convertCoord(tempMove)
+            if self.board[convCoord[1]][convCoord[0]].piece == None:
+                return False
+            validMoves = self.getValidMoves(tempMove)
 
         # Draw tiles and pieces
         for y in range(tileHeight*8):
             for x in range(0, tileWidth*8, 2):
                 tile = self.board[y//tileHeight][x//tileWidth]
+
                 # Basically checks if the current x coordinate is in the middle of a tile
-                if tile.piece != None and \
-                        (x - tileWidth//2 + 1) % tileWidth == 0 and \
-                        (y - tileHeight//2) % tileHeight == 0:
-                    screen.addch(yOffset + y, xOffset + x, tile.piece.symbol, \
-                                 Color.pair[tile.piece.color + tile.tileColor])
+                if (x - tileWidth//2 + 1) % tileWidth == 0 and (y - tileHeight//2) % tileHeight == 0:
+                    backgroundColor = tile.tileColor
+                    if self.convertCoord((x//tileWidth, y//tileHeight)) in validMoves:
+                        backgroundColor = 'h'
+
+                    if tile.piece != None:
+                        screen.addch(yOffset + y, xOffset + x, tile.piece.symbol, \
+                                     Color.pair[tile.piece.color + backgroundColor])
+                    else:
+                        screen.addch(yOffset + y, xOffset + x, ' ', \
+                                     Color.pair[tile.tileColor + backgroundColor]) 
                 else:
                     screen.addch(yOffset + y, xOffset + x, ' ', Color.pair[tile.tileColor])
                 screen.addch(yOffset + y, xOffset + x + 1, ' ', Color.pair[tile.tileColor])
@@ -80,13 +94,11 @@ class Board():
     def convertCoord(self, coord):
         return (coord[0], len(self.board)-1 - coord[1])
 
-    def movePiece(self, startPos, endPos):
-        convStartPos, convEndPos = self.convertCoord(startPos), self.convertCoord(endPos)
-        tile = self.board[convStartPos[1]][convStartPos[0]]
-        if tile.piece == None:
-            return
+    def getValidMoves(self, pos):
+        convPos = self.convertCoord(pos)
+        tile = self.board[convPos[1]][convPos[0]]
+        possibleMoves = tile.piece.getPossibleMoves(pos)
 
-        possibleMoves = tile.piece.getPossibleMoves(startPos)
         validMoves = []
         for direction in possibleMoves:
             for i in range(len(direction)):
@@ -95,8 +107,7 @@ class Board():
                 if targetTile.piece != None:
                     offset = 1
                     if targetTile.piece.color == tile.piece.color:
-                        if len(direction[:i]) > 0:
-                            offset = 0
+                        offset = 0
                     for move in direction[:i+offset]:
                         validMoves.append(move)
                     break
@@ -104,7 +115,14 @@ class Board():
                     if i == len(direction)-1:
                         for move in direction:
                             validMoves.append(move)
+        return validMoves
 
-        if endPos in validMoves:
+    def movePiece(self, startPos, endPos):
+        convStartPos, convEndPos = self.convertCoord(startPos), self.convertCoord(endPos)
+        tile = self.board[convStartPos[1]][convStartPos[0]]
+        if tile.piece == None:
+            return
+
+        if endPos in self.getValidMoves(startPos):
             self.board[convEndPos[1]][convEndPos[0]].piece = tile.piece
             self.board[convStartPos[1]][convStartPos[0]].piece = None
