@@ -14,30 +14,30 @@ class Pawn(Piece):
     # (0, 1) means "stay at x-axis, move one up at y-axis"
     def __init__(self):
         movementPattern = [(0, 1)] 
-        self.setAttributes(movementPattern, True, 'P')
+        self.setAttributes(movementPattern, True, '\u2659')
 
 class Knight(Piece):
     def __init__(self):
         movementPattern = [(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1)]
-        self.setAttributes(movementPattern, True,  'N')
+        self.setAttributes(movementPattern, True,  '\u2658')
 
 class Queen(Piece):
     def __init__(self):
         movementPattern = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
-        self.setAttributes(movementPattern, False,  'Q')
+        self.setAttributes(movementPattern, False,  '\u2655')
 
 class Bishop(Piece):
     def __init__(self):
         movementPattern = [(-1, 1), (1, 1), (1, -1), (-1, -1)]
-        self.setAttributes(movementPattern, False,  'B')
+        self.setAttributes(movementPattern, False,  '\u2657')
 
 class Rook(Piece):
     def __init__(self):
         movementPattern = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-        self.setAttributes(movementPattern, False,  'R')
+        self.setAttributes(movementPattern, False,  '\u2656')
 
 class King(Piece):
     def __init__(self):
         movementPattern = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
-        self.setAttributes(movementPattern, True,  'K')
+        self.setAttributes(movementPattern, True,  '\u2654')
 
