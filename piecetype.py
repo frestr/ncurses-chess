@@ -1,3 +1,4 @@
+from copy import deepcopy
 
 UNICODE = False
 
@@ -14,7 +15,12 @@ class Piece():
 
     def getPossibleMoves(self, currPos):
         possibleMoves = []
-        for direction in self.movementPattern:
+        movementPattern = deepcopy(self.movementPattern)
+        if isinstance(self, Pawn) and not self.hasMoved:
+            # Allow two steps for pawn if it is its first move
+            movementPattern.append((movementPattern[0][0], movementPattern[0][1]*2))
+            
+        for direction in movementPattern:
             dirLine = []
             i = 1 
             while True:
@@ -36,6 +42,7 @@ class Pawn(Piece):
     def __init__(self):
         movementPattern = [(0, 1)] 
         self.setAttributes(movementPattern, True, '\u2659' if UNICODE else 'P')
+        self.hasMoved = False
 
 class Knight(Piece):
     def __init__(self):

@@ -99,7 +99,7 @@ class Board():
         convPos = self.convertCoord(pos)
         tile = self.board[convPos[1]][convPos[0]]
         possibleMoves = tile.piece.getPossibleMoves(pos)
-
+        
         if self.whitesTurn and tile.piece.color != 'w' or not self.whitesTurn and tile.piece.color == 'w':
             return []
 
@@ -126,8 +126,11 @@ class Board():
         tile = self.board[convStartPos[1]][convStartPos[0]]
         if tile.piece == None:
             return
+        
+        if endPos in self.getValidMoves(startPos): 
+            if hasattr(tile.piece, 'hasMoved'):
+                tile.piece.hasMoved = True
 
-        if endPos in self.getValidMoves(startPos):
             self.board[convEndPos[1]][convEndPos[0]].piece = tile.piece
             self.board[convStartPos[1]][convStartPos[0]].piece = None
             self.whitesTurn = not self.whitesTurn
