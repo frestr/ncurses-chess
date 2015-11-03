@@ -44,6 +44,18 @@ class Pawn(Piece):
         self.setAttributes(movementPattern, True, '\u2659' if UNICODE else 'P')
         self.hasMoved = False
 
+    def getAttackMoves(self, currPos, leftTarget, rightTarget):
+        yDir = self.movementPattern[0][1]
+        attackMoves = []
+        if leftTarget:
+            if 0 <= currPos[0]-1 < 8 and 0 <= currPos[1]+yDir < 8:
+                attackMoves.append((currPos[0]-1, currPos[1]+yDir))
+        if rightTarget:
+            if 0 <= currPos[0]+1 < 8 and 0 <= currPos[1]+yDir < 8:
+                attackMoves.append((currPos[0]+1, currPos[1]+yDir))
+
+        return attackMoves
+
 class Knight(Piece):
     def __init__(self):
         movementPattern = [(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1)]

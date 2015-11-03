@@ -109,6 +109,9 @@ class Board():
                 coord = self.convertCoord(direction[i])
                 targetTile = self.board[coord[1]][coord[0]]
                 if targetTile.piece != None:
+                    if isinstance(tile.piece, piecetype.Pawn):
+                        break
+                    
                     offset = 1
                     if targetTile.piece.color == tile.piece.color:
                         offset = 0
@@ -119,6 +122,24 @@ class Board():
                     if i == len(direction)-1:
                         for move in direction:
                             validMoves.append(move)
+
+        # Make pawns able to attack sideways 
+        if isinstance(tile.piece, piecetype.Pawn):
+            convPawnDirection = tile.piece.movementPattern[0][1] * -1
+            targetPiece1, targetPiece2 = None, None
+            if 0 <= convPos[1] + convPawnDirection < 8 and 0 <= convPos[0] - 1 < 8: 
+                targetPiece1 = self.board[convPos[1] + convPawnDirection][convPos[0] - 1].piece
+            if 0 <= convPos[1] + convPawnDirection < 8 and 0 <= convPos[0] + 1 < 8:
+                targetPiece2 = self.board[convPos[1] + convPawnDirection][convPos[0] + 1].piece
+
+            leftTarget = True if targetPiece1 != None and targetPiece1.color != tile.piece.color else False
+            rightTarget = True if targetPiece2 != None and targetPiece2.color != tile.piece.color else False
+            
+            attackMoves = tile.piece.getAttackMoves(pos, leftTarget, rightTarget)
+            if len(attackMoves) > 0:
+                for move in attackMoves:
+                    validMoves.append(move)
+
         return validMoves
 
     def movePiece(self, startPos, endPos):
