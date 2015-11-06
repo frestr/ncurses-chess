@@ -81,3 +81,14 @@ class King(Piece):
         movementPattern = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
         self.setAttributes(movementPattern, True,  '\u2654' if UNICODE else 'K')
 
+    def getPossibleThreatPositions(self, pos):
+        self.bounded = False
+        moves = self.getPossibleMoves(pos)
+        self.bounded = True
+
+        # The moves of all pieces except the knight is in included in the "moves" list,
+        # so add the movement pattern of the knight explicitly
+        dummyKnight = Knight()
+        for move in dummyKnight.getPossibleMoves(pos):
+            moves.append(move)
+        return moves

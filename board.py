@@ -1,5 +1,6 @@
 from color import Color
 import piecetype
+from copy import deepcopy
 
 class Tile():
     def __init__(self, tileColor, piece=None):
@@ -12,6 +13,8 @@ class Board():
                       piecetype.King, piecetype.Bishop, piecetype.Knight, piecetype.Rook]
         self.board = [[None for x in range(8)] for y in range(8)]
         self.whitesTurn = True
+        self.kingsPos = {'w': (), 'b': ()}
+        self.inCheck = {'w': False, 'b': False}
 
         for y in range(len(self.board)):
             for x in range(len(self.board[0])):
@@ -35,7 +38,10 @@ class Board():
                 
                 if piece != None:
                     piece.setColor(pieceColor)
-                
+               
+                if isinstance(piece, piecetype.King):
+                    self.kingsPos[piece.color] = self.convertCoord((x, y))
+
                 self.board[y][x] = Tile(tileColor, piece)
 
     def printBoard(self, screen, screenDimensions, tempMove=None):
@@ -61,7 +67,12 @@ class Board():
                 # Basically checks if the current x coordinate is in the middle of a tile
                 if (x - tileWidth//2 + 1) % tileWidth == 0 and (y - tileHeight//2) % tileHeight == 0:
                     backgroundColor = tile.tileColor
-                    if self.convertCoord((x//tileWidth, y//tileHeight)) in validMoves:
+                    convCoord = self.convertCoord((x//tileWidth, y//tileHeight))
+
+                    if (convCoord == self.kingsPos['w'] and self.inCheck['w']) or \
+                            (convCoord == self.kingsPos['b'] and self.inCheck['b']):
+                        backgroundColor = 'c'
+                    elif convCoord in validMoves:
                         backgroundColor = 'h'
 
                     if tile.piece != None:
@@ -95,14 +106,20 @@ class Board():
     def convertCoord(self, coord):
         return (coord[0], len(self.board)-1 - coord[1])
 
-    def getValidMoves(self, pos):
+    def getValidMoves(self, pos, kingThreatCheck=False, ignoreWhoseTurn=False):
         convPos = self.convertCoord(pos)
         tile = self.board[convPos[1]][convPos[0]]
-        possibleMoves = tile.piece.getPossibleMoves(pos)
+        possibleMoves = []
+        if kingThreatCheck:
+            king = self.board[convPos[1]][convPos[0]].piece
+            possibleMoves = king.getPossibleThreatPositions(pos)
+        else:
+            possibleMoves = tile.piece.getPossibleMoves(pos)
+            if not ignoreWhoseTurn:
+                if self.whitesTurn and tile.piece.color != 'w' or \
+                        not self.whitesTurn and tile.piece.color == 'w':
+                    return []
         
-        if self.whitesTurn and tile.piece.color != 'w' or not self.whitesTurn and tile.piece.color == 'w':
-            return []
-
         validMoves = []
         for direction in possibleMoves:
             for i in range(len(direction)):
@@ -145,13 +162,47 @@ class Board():
     def movePiece(self, startPos, endPos):
         convStartPos, convEndPos = self.convertCoord(startPos), self.convertCoord(endPos)
         tile = self.board[convStartPos[1]][convStartPos[0]]
-        if tile.piece == None:
+        if tile.piece == None or endPos not in self.getValidMoves(startPos): 
             return
-        
-        if endPos in self.getValidMoves(startPos): 
-            if hasattr(tile.piece, 'hasMoved'):
-                tile.piece.hasMoved = True
 
-            self.board[convEndPos[1]][convEndPos[0]].piece = tile.piece
-            self.board[convStartPos[1]][convStartPos[0]].piece = None
-            self.whitesTurn = not self.whitesTurn
+        if isinstance(tile.piece, piecetype.King):
+            self.kingsPos[tile.piece.color] = endPos
+        
+        startTileCopy = deepcopy(self.board[convStartPos[1]][convStartPos[0]])
+        endTileCopy   = deepcopy(self.board[convEndPos[1]][convEndPos[0]])
+
+        self.board[convEndPos[1]][convEndPos[0]].piece = tile.piece
+        self.board[convStartPos[1]][convStartPos[0]].piece = None
+
+        self.inCheck['w'] = True if self.isInCheck('w') else False
+        self.inCheck['b'] = True if self.isInCheck('b') else False
+
+        # Do not allow movement that doesn't move a player out of check, 
+        # or movement that moves a player's own king into check
+        if (self.whitesTurn and self.inCheck['w']) or \
+                (not self.whitesTurn and self.inCheck['b']):
+            self.board[convStartPos[1]][convStartPos[0]].piece = startTileCopy.piece
+            self.board[convEndPos[1]][convEndPos[0]].piece = endTileCopy.piece
+
+            if isinstance(tile.piece, piecetype.King):
+                self.kingsPos[tile.piece.color] = startPos
+
+            return
+
+        if hasattr(tile.piece, 'hasMoved'):
+            tile.piece.hasMoved = True
+        self.whitesTurn = not self.whitesTurn
+
+    def isInCheck(self, player):
+        for pos in self.getValidMoves(self.kingsPos[player], kingThreatCheck=True):
+            convPos = self.convertCoord(pos)
+            possibleThreat = self.board[convPos[1]][convPos[0]].piece
+            if possibleThreat != None and possibleThreat.color != player:
+                possibleMoves = self.getValidMoves(pos, ignoreWhoseTurn=True)
+                with open('log.txt', 'a') as f:
+                    f.write('Possible threat pos: ' + str(pos) + '\n')
+                    f.write('Possible threat moves: ' + str(possibleMoves) + '\n')
+                    f.write('Kings pos (' + player + '): ' + str(self.kingsPos[player]) + '\n')
+                if self.kingsPos[player] in possibleMoves:
+                    return True
+        return False
