@@ -13,6 +13,7 @@ class Board():
                       piecetype.King, piecetype.Bishop, piecetype.Knight, piecetype.Rook]
         self.board = [[None for x in range(8)] for y in range(8)]
         self.whitesTurn = True
+        self.pawnPromotion = False
         self.kingsPos = {'w': (), 'b': ()}
         self.inCheck = {'w': False, 'b': False}
 
@@ -98,8 +99,6 @@ class Board():
                     str(8 - y//tileHeight), Color.pair['numbering'])
             screen.addch(yOffset + y, xOffset + tileWidth*len(self.board[0]) + tileWidth//2, \
                     str(8 - y//tileHeight), Color.pair['numbering'])
-
-        screen.move(yOffset + tileHeight*8//2, xOffset + tileWidth*10)
 
     # This function changes the origin from being in the lower left (like a normal chess board),
     # to being in the upper left (to comply with how the 2D list of the board behaves)
@@ -188,9 +187,12 @@ class Board():
                 self.kingsPos[tile.piece.color] = startPos
 
             return
+        
+        if isinstance(self.board[convEndPos[1]][convEndPos[0]].piece, piecetype.Pawn):
+            self.board[convEndPos[1]][convEndPos[0]].piece.hasMoved = True
+            if endPos[1] == 0 or endPos[1] == 7:
+                self.pawnPromotion = True
 
-        if hasattr(tile.piece, 'hasMoved'):
-            tile.piece.hasMoved = True
         self.whitesTurn = not self.whitesTurn
 
     def isInCheck(self, player):
@@ -199,10 +201,20 @@ class Board():
             possibleThreat = self.board[convPos[1]][convPos[0]].piece
             if possibleThreat != None and possibleThreat.color != player:
                 possibleMoves = self.getValidMoves(pos, ignoreWhoseTurn=True)
-                with open('log.txt', 'a') as f:
-                    f.write('Possible threat pos: ' + str(pos) + '\n')
-                    f.write('Possible threat moves: ' + str(possibleMoves) + '\n')
-                    f.write('Kings pos (' + player + '): ' + str(self.kingsPos[player]) + '\n')
                 if self.kingsPos[player] in possibleMoves:
                     return True
         return False
+    
+    def promotePawn(self, promotionChoice):
+        # This method works, because a pawn promotion has to be done immediately, and
+        # there can therefore at most be one pawn in the 1st or 8th row
+        for y in [0, 7]:
+            for x in range(len(self.board[0])):
+                if isinstance(self.board[y][x].piece, piecetype.Pawn):
+                    pawn = self.board[y][x].piece
+                    choice = {'q': piecetype.Queen, 'n': piecetype.Knight, \
+                              'r': piecetype.Rook, 'b': piecetype.Bishop}
+                    newPiece = choice[promotionChoice]()
+                    newPiece.setColor(pawn.color)
+                    self.board[y][x].piece = newPiece
+                    self.pawnPromotion = False

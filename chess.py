@@ -27,6 +27,16 @@ def getMove(scr):
     cInp = convertInput(inpList)
     return cInp
 
+def getPromotionChoice(scr, scrDim):
+    string = "Press 'q', 'n', 'r' or 'b' to promote pawn"
+    scr.addstr(scrDim[1]//2 - 1, scrDim[0]//2 - len(string)//2, string)
+
+    validInput = ['q', 'n', 'r', 'b']
+    inp = ''
+    while inp not in validInput:
+        inp = scr.getkey()
+    return inp
+
 def main(scr):
     scrDimensions = shutil.get_terminal_size((80, 20))
 
@@ -42,7 +52,7 @@ def main(scr):
         moveStart = getMove(scr)
         if moveStart == None:
             continue
-        
+
         if brd.printBoard(scr, scrDimensions, moveStart) == False:
             continue
 
@@ -51,6 +61,9 @@ def main(scr):
             continue
 
         brd.movePiece(moveStart, moveEnd)
+        if brd.pawnPromotion:
+            promotion = getPromotionChoice(scr, scrDimensions)
+            brd.promotePawn(promotion) 
 
 if __name__ == '__main__':
     curses.wrapper(main)
