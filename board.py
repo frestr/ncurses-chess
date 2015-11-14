@@ -16,6 +16,8 @@ class Board():
         self.pawnPromotion = False
         self.kingsPos = {'w': (), 'b': ()}
         self.inCheck = {'w': False, 'b': False}
+        self.checkmate = False
+        self.winner = ''
 
         for y in range(len(self.board)):
             for x in range(len(self.board[0])):
@@ -176,6 +178,19 @@ class Board():
         self.inCheck['w'] = True if self.isInCheck('w') else False
         self.inCheck['b'] = True if self.isInCheck('b') else False
 
+        # If the king is in check, also check if it is checkmated
+        if self.inCheck['w'] or self.inCheck['b']:
+            checkmated = False
+            if self.whitesTurn:
+                checkmated = self.isCheckmated('b')
+            else:
+                checkmated = self.isCheckmated('w')
+           
+            if checkmated:
+                self.checkmate = True
+                self.winner = 'w' if self.whitesTurn else 'b'
+                return
+
         # Do not allow movement that doesn't move a player out of check, 
         # or movement that moves a player's own king into check
         if (self.whitesTurn and self.inCheck['w']) or \
@@ -187,7 +202,7 @@ class Board():
                 self.kingsPos[tile.piece.color] = startPos
 
             return
-        
+
         if isinstance(self.board[convEndPos[1]][convEndPos[0]].piece, piecetype.Pawn):
             self.board[convEndPos[1]][convEndPos[0]].piece.hasMoved = True
             if endPos[1] == 0 or endPos[1] == 7:
@@ -195,16 +210,96 @@ class Board():
 
         self.whitesTurn = not self.whitesTurn
 
-    def isInCheck(self, player):
+    def isInCheck(self, player, getPositions=False):
+        threatPositions = []
         for pos in self.getValidMoves(self.kingsPos[player], kingThreatCheck=True):
             convPos = self.convertCoord(pos)
             possibleThreat = self.board[convPos[1]][convPos[0]].piece
             if possibleThreat != None and possibleThreat.color != player:
                 possibleMoves = self.getValidMoves(pos, ignoreWhoseTurn=True)
                 if self.kingsPos[player] in possibleMoves:
-                    return True
-        return False
-    
+                    if getPositions:
+                        threatPositions.append(pos)
+                    else: 
+                        return True
+        return threatPositions if getPositions else False
+   
+    def isCheckmated(self, player):
+        def canMoveWithoutCheck(startPos, endPos, player):
+            startCoord = self.convertCoord(startPos)
+            endCoord = self.convertCoord(endPos)
+
+            startTileCopy = deepcopy(self.board[startCoord[1]][startCoord[0]])
+            endTileCopy = deepcopy(self.board[endCoord[1]][endCoord[0]])
+            kingPosCopy = deepcopy(self.kingsPos[player])
+
+            if isinstance(startTileCopy.piece, piecetype.King):
+                self.kingsPos[player] = endPos
+            self.board[endCoord[1]][endCoord[0]].piece = self.board[startCoord[1]][startCoord[0]].piece
+            self.board[startCoord[1]][startCoord[0]].piece = None
+            
+            check = False
+            if self.isInCheck(player):
+                check = True
+
+            self.board[startCoord[1]][startCoord[0]] = startTileCopy
+            self.board[endCoord[1]][endCoord[0]] = endTileCopy
+            self.kingsPos[player] = kingPosCopy
+            return not check
+
+        threats = self.isInCheck(player, getPositions=True)
+        if len(threats) == 0:
+            return False
+
+        exposedCoords = []
+        kingsPos = self.kingsPos[player]
+        
+        # Get all the tile positions that are in the "attack direction" towards the king
+        for threatPos in threats:
+            exposedCoords.append(threatPos)
+            convPos = self.convertCoord(threatPos)
+            threatPiece = self.board[convPos[1]][convPos[0]].piece
+            for dirLine in threatPiece.getPossibleMoves(threatPos):
+                if kingsPos in dirLine:
+                    for pos in dirLine: 
+                        exposedCoords.append(pos)
+
+        # This checks if there is a safe coord the king can move to directly
+        checkmate = True
+        for move in self.getValidMoves(kingsPos, ignoreWhoseTurn=True):
+            if (move not in exposedCoords or move in threats) and canMoveWithoutCheck(kingsPos, move, player):
+                checkmate = False
+
+        # If the king is in check by multiple pieces, there is no other way to avoid checkmate
+        if checkmate and len(threats) > 1:
+            return True
+        elif not checkmate:
+            return False
+
+        # Get all valid moves that can be made by friendly pieces
+        # (and also save the location of the piece that can make the corresponding moves)
+        allPositions = []
+        for y in range(len(self.board)):
+            for x in range(len(self.board[0])):
+                piece = self.board[y][x].piece
+                if piece != None and not isinstance(piece, piecetype.King) and piece.color == player:
+                    convCoord = self.convertCoord((x, y))
+                    positions = [convCoord] # The piece's position is always the first element
+                    for position in self.getValidMoves(convCoord, ignoreWhoseTurn=True):
+                        positions.append(position)
+                    allPositions.append(positions)
+
+        # Check if one of the moves can be used to block/capture the piece causing the check,
+        # and check if that move is valid, i.e. doesn't cause another check
+        checkmate = True
+        for exposedCoord in exposedCoords:
+            for positions in allPositions:
+                if exposedCoord in positions and canMoveWithoutCheck(positions[0], exposedCoord, player):
+                    checkmate = False
+                    break
+
+        return checkmate
+
     def promotePawn(self, promotionChoice):
         # This method works, because a pawn promotion has to be done immediately, and
         # there can therefore at most be one pawn in the 1st or 8th row

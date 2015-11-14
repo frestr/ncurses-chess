@@ -20,7 +20,10 @@ def getMove(scr):
     while len(inpList) < 2:
         inp = ''
         while inp not in validInput:
-            inp = scr.getkey()
+            try:
+                inp = scr.getkey()
+            except KeyboardInterrupt:
+                quit()
             if inp == '\x1b': # Escape key
                 return None
         inpList.append(inp)
@@ -34,8 +37,16 @@ def getPromotionChoice(scr, scrDim):
     validInput = ['q', 'n', 'r', 'b']
     inp = ''
     while inp not in validInput:
-        inp = scr.getkey()
+        try:
+            inp = scr.getkey()
+        except KeyboardInterrupt:
+            quit()
     return inp
+
+def announceWinner(scr, scrDim, winner):
+    winningPlayer = 'White' if winner == 'w' else 'Black'
+    string = 'Checkmate! {} player won!'.format(winningPlayer)
+    scr.addstr(scrDim[1]//2 - 1, scrDim[0]//2 - len(string)//2, string)
 
 def main(scr):
     scrDimensions = shutil.get_terminal_size((80, 20))
@@ -61,7 +72,15 @@ def main(scr):
             continue
 
         brd.movePiece(moveStart, moveEnd)
-        if brd.pawnPromotion:
+        if brd.checkmate:
+            brd.printBoard(scr, scrDimensions)
+            announceWinner(scr, scrDimensions, brd.winner)
+            try:
+                scr.getch() # Wait for a key to be pressed before quitting
+            except KeyboardInterrupt:
+                pass
+            break
+        elif brd.pawnPromotion:
             promotion = getPromotionChoice(scr, scrDimensions)
             brd.promotePawn(promotion) 
 
