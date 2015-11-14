@@ -15,7 +15,7 @@ class Piece():
 
     def getPossibleMoves(self, currPos):
         possibleMoves = []
-        movementPattern = deepcopy(self.movementPattern)
+        movementPattern = self.movementPattern
            
         for direction in movementPattern:
             dirLine = []
