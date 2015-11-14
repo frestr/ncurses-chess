@@ -16,10 +16,7 @@ class Piece():
     def getPossibleMoves(self, currPos):
         possibleMoves = []
         movementPattern = deepcopy(self.movementPattern)
-        if isinstance(self, Pawn) and not self.hasMoved:
-            # Allow two steps for pawn if it is its first move
-            movementPattern.append((movementPattern[0][0], movementPattern[0][1]*2))
-            
+           
         for direction in movementPattern:
             dirLine = []
             i = 1 
@@ -27,7 +24,9 @@ class Piece():
                 newPos = (currPos[0] + direction[0]*i, currPos[1] + direction[1]*i)
                 if 0 <= newPos[0] < 8 and 0 <= newPos[1] < 8:
                     dirLine.append(newPos)
-                    if self.bounded:
+                    if isinstance(self, Pawn) and not self.hasMoved and i == 1:
+                        i += 1
+                    elif self.bounded:
                         break
                     else:
                         i += 1
