@@ -49,7 +49,7 @@ class Board():
 
     def printBoard(self, screen, screenDimensions, tempMove=None):
         # tileHeight must be an odd number (or else the logic fails)
-        tileHeight = 1 if screenDimensions[0] < 26 or screenDimensions[1] < 26 else 3
+        tileHeight = 1 if screenDimensions[0] < 28*2 or screenDimensions[1] < 28 else 3
         tileWidth = tileHeight*2
 
         xOffset = int(screenDimensions[0]//2 - tileWidth*8//2)
