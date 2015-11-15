@@ -50,6 +50,10 @@ def announceWinner(scr, scrDim, winner):
 
 def main(scr):
     scrDimensions = shutil.get_terminal_size((80, 20))
+    if scrDimensions[0] < 10*2 or scrDimensions[1] < 10:
+        curses.endwin()
+        print('Terminal window is too small')
+        quit()
 
     scr.border(0)
     curses.curs_set(False)
